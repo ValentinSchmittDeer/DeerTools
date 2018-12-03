@@ -22,7 +22,7 @@ Python 3
 
 `          "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "`
 
-`(" can be used to repeat the same information)
+`(" can be used to repeat the same information)`
 
 - Get tile centroides from ESA kml (hard link)
 For each tiles
