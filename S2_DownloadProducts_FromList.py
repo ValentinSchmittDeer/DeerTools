@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
-import sys, os, time
-from datetime import datetime,timedelta
+import sys, os
+from time import strftime,strptime,localtime
 import xml.etree.ElementTree as ET
 
 #----------------------------------------------------------------------------------------------------
@@ -10,43 +10,49 @@ import xml.etree.ElementTree as ET
 def Usage():
     print("""
                 Download Sentinel 2 Products on ESA Scihub
-This script is an alternative to download pre-choosen Sentinel-2 products.
+    I use to download Sentinel 2 data by script to get whole products or 
+just few bands. OlivierHagolle's script is an alternative for search query
+and download its.
+    This script allow to download pre-choosen Sentinel-2 products.
 He requests the Copernicus Hub (https://scihub.copernicus.eu) which is 
 the official products deposit serveur. From a simple list where tiles 
 are referenced by their name (from the military grid) and their 
 acquisition date, it finds the right products on ESA SciHub and 
-downloads it. This script can work on Windows and Unix system. 
+downloads it. it can work on Windows and Unix system. 
     Thank the ESA API documentation which is well documented and OlivierHagolle
-example which show me an example. By the way, his script is good way to run
-seaching requests.
+example which show me an example. 
     An alternative of this script could be creating a cart on Copernicus Hub 
-to send 'aria2 -M cart.meta4' command. In fact, I wrote this way to download 
-sevral tiles from the same segment before merge them.
+to send 'aria2 -M cart.meta4' command.
 
 **************************************************************************
                              Tasks:
 Python 3
-- Find a known Download Package
+- Search on computer a known Download Package. 
+  This is the known package list:
        • Wget : https://www.gnu.org/software/wget/
        • cURL : https://curl.haxx.se/
        • Aria2 : https://aria2.github.io/manual/en/html/index.html
 
 - Get Id and password account for the Copernicus Hub 
   from a txt file 'S2_DownloadProducts_IdScihub.txt' next to the script
-        example: Jojo JojoPass 
+        example: JojoId JojoPass 
 
-- Read a list of tiles in a ASCII file, this is a kind of unheader CSV
-        TileCode ; LevelOfProduct ; DateOfAcquisition ; OutputFolder
-        T31TFL   ; L1C            ; 20181007          ; /Users/administrateur/Downloads
-        "        ; L2A            ; 20180925          ; " 
+- Read a list of tiles in a ASCII file which is a kind of unheader CSV
+        TileCode ; DateOfAcquisition ; LevelOfProduct ; Bands                         ; OutputFolder
+        T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads
+        "        ; 20180925          ; L2A            ; B02B03B04 (seclected bands)   ; "
+        "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "
         (" can be used to repeat the same information)
 
 - Get tile centroides from ESA kml (hard link)
 
 For each tiles
-- Send an OpenSearch query to get the product ID
+- Send an OpenSearch query to get the product ID (On Scihub, tiles are referenced by Id name)
 - Parse this query to find the right product
 - Download the product to a zip file in the output folder
+    OR
+- Download the Xml file of the product, then download bands
+
 
 **************************************************************************
 S2_DownloadProducts_FromList.py
@@ -56,11 +62,10 @@ Arg1: List of tiles
 """)
 
 #----------------------------------------------------------
-# Check Download Package
+# List of Download Package
 #----------------------------------------------------------
-
 dicoDP={'wget': 'wget --no-check-certificate --user={USERNAME} --password={PASSWORD} --output-document={OUTFOLDER}%s{FILENAME} "{URI_QUERY}"'% os.sep,
-    'curloo': 'curl -u {USERNAME}:{PASSWORD} -g "{URI_QUERY}" > {OUTFOLDER}%s{FILENAME}'% os.sep,
+    'curl': 'curl -u {USERNAME}:{PASSWORD} -g "{URI_QUERY}" > {OUTFOLDER}%s{FILENAME}'% os.sep,
     'aria2c': 'aria2c --http-user={USERNAME} --http-passwd={PASSWORD} -d {OUTFOLDER} -o {FILENAME} "{URI_QUERY}"'
     }
 
@@ -109,52 +114,75 @@ def GetLoginId(pathFile):
 
 def ReadListTile(pathFile):
     fileIn=open(pathFile)
-    tile,level,date,repOut=None,None,None,None
+    tile,date,level,bands,repOut=None,None,None,None,None
     list=[]
     for line in fileIn:
         clearLine=line.strip()
         words=[word.strip() for word in clearLine.split(';')]
-        if not len(words)==4 : raise RuntimeError("Reading error of tile list : %s"% words)
+        if not len(words)==5 : raise RuntimeError("Reading error of tile list : %s"% words)
         
         # Tile name
         if not words[0]=='"' : 
-            if not words[0][0]=='T' and len(words[0])==6: raise RuntimeError("Reading error of tile list : level 0 = %s"% words[0])
+            val=words[0]
+            if not val[0]=='T' and len(val)==6: raise RuntimeError("Reading error of tile list : #0 = %s"% val)
             try:
-                int(words[0][1:3])
+                int(val[1:3])
             except ValueError:
-                raise RuntimeError("Reading error of tile list : level 0 = %s"% words[0])
-            tile=words[0][1:]
-        # Level name
-        if not words[1]=='"' : 
-            level='S2MSI'+words[1][-2:]
-            if not level=='S2MSI1C' and not level=='S2MSI2A':
-                raise RuntimeError("Reading error of tile list : level 1 = %s"% words[1])
+                raise RuntimeError("Reading error of tile list : #0 = %s"% val)
+            tile=val[1:]
         # Date
+        if not words[1]=='"' : 
+            val=words[1]
+            if not val[:2]=='20' or not len(val)==8: raise RuntimeError("Reading error of tile list : #1 = %s"% val)
+            try:
+                date=strptime(val, '%Y%m%d')
+            except ValueError:
+                raise RuntimeError("Reading error of tile list : #1 = %s"% val)
+        # Level name
         if not words[2]=='"' : 
-            if not words[2][0]=='2' or not len(words[2])==8: raise RuntimeError("Reading error of tile list : level 2 = %s"% words[2])
-            date=words[2]
-        # Output directory
+            val=words[2]
+            level='S2MSI'+val[-2:]
+            if not level=='S2MSI1C' and not level=='S2MSI2A':
+                raise RuntimeError("Reading error of tile list : #2 = %s"% val)
+        # Bands
         if not words[3]=='"' : 
-            if not os.path.isdir(words[3]): raise RuntimeError("Reading error of tile list : level 3 = %s"% words[3])
-            repOut=words[3]
+            val=words[3]
+            if val=='prod':
+                bands="prod"
+            else:
+                strBands=val.strip(' B').split('B')
+                bands=[]
+                for i in range(len(strBands)):
+                    elem=strBands[i]
+                    try:
+                        bands.append(int(elem))
+                    except ValueError:
+                        if not elem[-1]=='-' : raise RuntimeError("Reading error of tile list : #3 = %s"% val)
+                        bands+=[j for j in range(int(elem[:-1]),int(strBands[i+1]))]
+        # Output directory
+        if not words[4]=='"' : 
+            val=words[4]
+            if not os.path.isdir(val): raise RuntimeError("Reading error of tile list : #4 = %s"% val)
+            repOut=val
         
-        if tile and level and date and repOut: 
-            list.append((tile,level,date,repOut))
+        #final check
+        if tile and date and level and bands and repOut: 
+            list.append((tile,date,level,bands,repOut))
         else : 
             raise RuntimeError("Reading error of tile list : %s"% clearLine)
     
     fileIn.close()
     return list
 
-def FindTileParam(urlKml,listTile):
+def ParseKml(urlKml,listTile):
     dicCenter=dict((name,None) for name in listTile)
     
     if not 'urllib' in locals(): import urllib.request
     fileKml=urllib.request.urlopen(urlKml).read()
     root = ET.fromstring(fileKml)
-    noiseXml=root[0].tag.replace('Document','')
+    noise=root.tag.split('}')[0]+'}'
     
-    for tile in root.iter(noiseXml+'Placemark'):
+    for tile in root.iter(noise+'Placemark'):
         nameTile=tile[0].text
         if not nameTile in listTile or dicCenter[nameTile]: continue
         centerStr=tile[4][1][0].text.split(',')[:2]
@@ -167,6 +195,27 @@ def FindTileParam(urlKml,listTile):
     
     if None in dicCenter.values(): raise RuntimeError("Tile didn't find :\n"+dicCenter)
     return dicCenter
+
+def ParseQuery(pathFile,nameTile,date):
+    title,id,urlOD=None,None,None
+    tree=ET.parse(pathFile)
+    root=tree.getroot()
+    noise=root.tag.split('}')[0]+'}'
+    
+    for entry in root.findall(noise+'entry'):
+        if not entry.find(noise+'title').text.startswith('S2'): continue
+        title=entry.find(noise+'title').text
+        wordsTitle=title.split('_')
+        
+        #match query answer (Tile)
+        if not wordsTitle[5][1:]==nameTile : continue
+        #match query answer (Date)
+        if not wordsTitle[2][:8]==strftime('%Y%m%d',date) : continue
+        
+        id=entry.find(noise+'id').text
+        url=entry.find(noise+'link').attrib['href']
+    
+    return title,id,url
 
 #==========================================================
 #main
@@ -183,6 +232,11 @@ if __name__ == "__main__":
         pathIn=sys.argv[1].strip()
         if not os.path.isfile(pathIn): raise RuntimeError("List is incorrect")
         
+        #Unix special character
+        if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+            specChar="\\$value"
+        else:
+            specChar="$value"
         #get Download Package
         formatDP=GetDP(dicoDP)
         del dicoDP
@@ -212,11 +266,10 @@ if __name__ == "__main__":
             lstLot.append(lstFullTiles[(len(lstFullTiles)%100)*-1:])
         
         stat=0
-        answQ=''
         #----------------------------------------------------------------------------------------------------
         # Get centroide
         #----------------------------------------------------------------------------------------------------
-        dicCentroide=FindTileParam(urlGrid,[tile[0] for tile in lstFullTiles])
+        dicCentroide=ParseKml(urlGrid,[tile[0] for tile in lstFullTiles])
         
         #----------------------------------------------------------------------------------------------------
         # Loop
@@ -226,87 +279,116 @@ if __name__ == "__main__":
         for lot in lstLot:
             for tilesStuff in lot:
                 i+=1
+                [nameTile,dateTile,levelTile,bandsTile,outTile]=tilesStuff
                 #----------------------------------------------------------------------------------------------------
                 # OpenSearch query
                 #----------------------------------------------------------------------------------------------------
-                pathQuery=os.path.join(tilesStuff[3],'QueryResults_%s-%s.xml'% (tilesStuff[2],tilesStuff[0]))
+                pathQuery=os.path.join(outTile,'QueryResults_%s-%s.xml'% (strftime('%Y%m%d',dateTile),nameTile))
                 if os.path.exists(pathQuery): os.remove(pathQuery)
                 urlCur=urlOS
                 
                 # BY centroide
-                urlCur+='footprint:\\"Intersects(%s,%s)\\"'% (dicCentroide[tilesStuff[0]][1],dicCentroide[tilesStuff[0]][0])
+                urlCur+='footprint:\\"Intersects(%s,%s)\\"'% (dicCentroide[nameTile][1],dicCentroide[nameTile][0])
                 # BY inside square
-                #urlCur+='footprint:\\"Intersects(POLYGON(({lonmin} {latmin},{lonmax} {latmin},{lonmax} {latmax},{lonmin} {latmax},{lonmin} {latmin})))\\" '.format(lonmin=dicCentroide[tilesStuff[0]][0]-0.3,lonmax=dicCentroide[tilesStuff[0]][0]+0.3,latmin=dicCentroide[tilesStuff[0]][1]-0.3,latmax=dicCentroide[tilesStuff[0]][1]+0.3)
+                #urlCur+='footprint:\\"Intersects(POLYGON(({lonmin} {latmin},{lonmax} {latmin},{lonmax} {latmax},{lonmin} {latmax},{lonmin} {latmin})))\\" '.format(lonmin=dicCentroide[nameTile][0]-0.3,lonmax=dicCentroide[nameTile][0]+0.3,latmin=dicCentroide[nameTile][1]-0.3,latmax=dicCentroide[nameTile][1]+0.3)
                 
-                # DATE
-                dateAcqui=datetime.strptime(tilesStuff[2], '%Y%m%d')
-                dateBefore=dateAcqui-timedelta(days=1)
-                dateAfter=dateAcqui+timedelta(days=1)
-                urlCur+=' AND filename:S2* AND ingestiondate:[%s00:00:00.000Z TO %s00:00:00.000Z] AND producttype:%s &rows=100'% (dateBefore.strftime('%Y-%m-%dT'),dateAfter.strftime('%Y-%m-%dT'),tilesStuff[1])
+                # DATE & Level
+                urlCur+=' AND filename:S2* AND ingestiondate:[%s00:00:00.000Z TO %s23:59:00.000Z] AND producttype:%s &rows=100'% (strftime('%Y-%m-%dT',dateTile),strftime('%Y-%m-%dT',dateTile),levelTile)
                 
                 if formatDP.startswith('curl'): urlCur=urlCur.replace(' ','%20')
-                cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=tilesStuff[3] ,FILENAME='QueryResults_%s-%s.xml'% (tilesStuff[2],tilesStuff[0]), URI_QUERY=urlCur)
                 
-                print("%s/%s-%.2f%%:  %s"% (time.strftime("%Y.%m.%d",time.localtime()),time.strftime("%H.%M.%S",time.localtime()),i*pourcent,cmd))
+                cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME='QueryResults_%s-%s.xml'% (strftime('%Y%m%d',dateTile),nameTile), URI_QUERY=urlCur)
+                print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
                 returnCode=os.system(cmd)
                 
+                print(returnCode,os.path.exists(pathQuery),os.path.getsize(pathQuery))
                 if returnCode or not os.path.exists(pathQuery) or not os.path.getsize(pathQuery):
-                    print("-- Query hurdle : %s"% pathQuery)
+                    print("--Query empty : %s"% pathQuery)
                     continue
                 
                 #----------------------------------------------------------------------------------------------------
                 # Query parse
                 #----------------------------------------------------------------------------------------------------
-                title,ident,urlOD=None,None,None
-                
-                tree=ET.parse(pathQuery)
-                root=tree.getroot()
-                noiseXml=root.tag.replace('feed','')
-                
-                lstAnsw=root.findall(noiseXml+'entry')
-                answQ+='Tile %s-%s : %d answer(s)\n'% (tilesStuff[2],tilesStuff[0],len(lstAnsw))
-                for entry in lstAnsw:
-                    if not entry.find(noiseXml+'title').text.startswith('S2'): continue
-                    title=entry.find(noiseXml+'title').text
-                    wordsTitle=title.split('_')
-                    
-                    #match query answer (Tile)
-                    if not wordsTitle[5][1:]==tilesStuff[0] : continue
-                    #match query answer (Date)
-                    if not wordsTitle[2][:8]==tilesStuff[2] : continue
-                    
-                    ident=entry.find(noiseXml+'id').text
-                    urlOD=entry.find(noiseXml+'link').attrib['href']
+                title,ident,urlOD=ParseQuery(pathQuery,nameTile,dateTile)
                 
                 if title is None or ident is None or urlOD is None: 
-                    print("-- Tile did not find : %s"% pathIn)
+                    print("--Tile did not find : %s"% pathIn)
                     continue
-                #Unix special character
-                if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-                    urlOD=urlOD.replace("$value","\\$value")
+                    
                 
                 #----------------------------------------------------------------------------------------------------
                 # Download
                 #----------------------------------------------------------------------------------------------------
-                #part 1 command writing : downloader
-                pathOut=os.path.join(tilesStuff[3],'%s.zip'% title.replace('.SAFE',''))
-                if os.path.exists(pathOut): raise RuntimeError("Product already exists : %s"% pathOut)
+                #Download whole product
+                if bandsTile=='prod':
+                    if os.path.exists(os.path.join(outTile,title+'.zip')): raise RuntimeError("Product already exists : %s"% outTile)
+                    
+                    cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME=title+'.zip', URI_QUERY=urlOD.replace("$value",specChar))
+                    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                    returnCode=os.system(cmd)
+                    
+                    if returnCode : 
+                        print("--Download issue")
+                        continue
+                    elif os.path.exists(os.path.join(outTile,title+'.zip')) and os.path.getsize(os.path.join(outTile,title+'.zip')): 
+                        if os.path.exists(pathQuery) : os.remove(pathQuery)
+                        stat+=1
                 
-                cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=tilesStuff[3] ,FILENAME='%s.zip'% title.replace('.SAFE',''), URI_QUERY=urlOD)
-                
-                print("%s/%s-%.2f%%:  %s"% (time.strftime("%Y.%m.%d",time.localtime()),time.strftime("%H.%M.%S",time.localtime()),i*pourcent,cmd))
-                returnCode=os.system(cmd)
-                
-                if returnCode : continue
-                if os.path.exists(pathQuery) : os.remove(pathQuery)
-                if os.path.exists(pathOut) and os.path.getsize(pathOut): stat+=1
+                #Download bands 
+                else:
+                    repOut=os.path.join(outTile,'%s'% title)
+                    if os.path.exists(repOut): raise RuntimeError("Product already exists : %s"% repOut)
+                    os.mkdir(repOut)
+                    
+                    #Get Xml file of product
+                    xmlName='MTD_MSIL%s.xml'% levelTile[-2:]
+                    urlXml='/'.join( urlOD.split('/')[:-1]+["Nodes('%s.SAFE')"% title]+["Nodes('%s')"% xmlName]+[specChar] )
+                    
+                    cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=xmlName, URI_QUERY=urlXml)
+                    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                    returnCode=os.system(cmd)
+                    
+                    if returnCode : 
+                        print("--Download issue : Xml file")
+                        continue
+                    else:
+                        tree=ET.parse(os.path.join(repOut,xmlName))
+                        root=tree.getroot()
+                        
+                        if levelTile=='L1C':
+                            dicoRelatPath=dict([(elem.text.split('_')[-1],elem.text+'.jp2') for elem in root.iter('IMAGE_FILE')])
+                        else:
+                            dicoRelatPath={}
+                            for elem in root.iter('IMAGE_FILE'):
+                                key=elem.text.split('_')[-2]
+                                if key in dicoRelatPath: continue
+                                dicoRelatPath[key]=elem.text+'.jp2'
+                    
+                    #Get bands
+                    returnCode=0
+                    for bandNum in bandsTile:
+                        relatPathBand=dicoRelatPath['B%02i'% bandNum]
+                        nameBandOut=title+'_B%02i.jp2'% bandNum
+                        
+                        urlBand='/'.join( urlOD.split('/')+["Nodes('%s.SAFE')"% title]+["Nodes('%s')"% elem for elem in relatPathBand.split('/')]+[specChar] )
+                        
+                        cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=nameBandOut, URI_QUERY=urlBand)
+                        print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                        returnCode+=os.system(cmd)
+                        
+                        if returnCode : 
+                            print("--Download issue : Bands %s"% nameBandOut)
+                            returnCode=0
+                        
+                    if not returnCode:
+                        if os.path.exists(pathQuery) : os.remove(pathQuery)
+                        stat+=1
                 
         #----------------------------------------------------------------------------------------------------
-        # Ending
+        # End
         #----------------------------------------------------------------------------------------------------
         print('\n\n%d Tiles to download-------------'% len(lstFullTiles))
         print('%d Tiles done--------------------'% stat)
-        print(answQ)
         
         
     #----------------------------------------------------------------------------------------------------
