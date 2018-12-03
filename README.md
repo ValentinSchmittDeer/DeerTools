@@ -1,16 +1,14 @@
-# DeerTools
+#DeerTools
 
-S2_Download =========================================
-                    Download Sentinel 2 Products on ESA Scihub
-  I use to download Sentinel 2 data by script to get whole products or just few bands. OlivierHagolle's script is an alternative for search query and download its.
-    This script allow to download pre-choosen Sentinel-2 products. He requests the Copernicus Hub (https://scihub.copernicus.eu) which is 
-the official products deposit serveur. From a simple list where tiles are referenced by their name (from the military grid) and their 
-acquisition date, it finds the right products on ESA SciHub and downloads it. it can work on Windows and Unix system. 
-    Thank the ESA API documentation which is well documented and OlivierHagolle example which show me an example. 
-    An alternative of this script could be creating a cart on Copernicus Hub to send 'aria2 -M cart.meta4' command.
+## S2_Download
+### Download Sentinel 2 Products on ESA Scihub.
+I use to download Sentinel 2 data by script to get whole products or just few bands. OlivierHagolle's script is an alternative for search query and download its.
+This script allow to download pre-choosen Sentinel-2 products. He requests the Copernicus Hub (https://scihub.copernicus.eu) which is the official products deposit serveur. From a simple list where tiles are referenced by their name (from the military grid) and their acquisition date, it finds the right products on ESA SciHub and downloads it. it can work on Windows and Unix system. 
 
-**************************************************************************
-                             Tasks:
+Thank the ESA API documentation which is well documented and OlivierHagolle example which show me an example. 
+
+An alternative of this script could be creating a cart on Copernicus Hub to send 'aria2 -M cart.meta4' command.
+### Tasks:
 Python 3
 - Search on computer a known Download Package. 
 - Get Id and password account for the Copernicus Hub 
