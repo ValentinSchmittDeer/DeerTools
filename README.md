@@ -13,11 +13,16 @@ Python 3
 - Search on computer a known Download Package. 
 - Get Id and password account for the Copernicus Hub 
 - Read a list of tiles in a ASCII file which is a kind of unheader CSV
-        TileCode ; DateOfAcquisition ; LevelOfProduct ; Bands                         ; OutputFolder
-        T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads
-        "        ; 20180925          ; L2A            ; B02B03B04 (seclected bands)   ; "
-        "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "
-        (" can be used to repeat the same information)
+
+`          TileCode ; DateOfAcquisition ; LevelOfProduct ; Bands                         ; OutputFolder`
+
+`          T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads`
+
+`          "        ; 20180925          ; L2A            ; B02B03B04 (seclected bands)   ; "`
+
+`          "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "`
+
+`(" can be used to repeat the same information)
 
 - Get tile centroides from ESA kml (hard link)
 For each tiles
