@@ -7,7 +7,7 @@ This script allow to download pre-choosen Sentinel-2 products. He requests the [
 
 Thank the ESA API documentation which is well documented and OlivierHagolle script which show me an example. 
 
-An alternative of this script could be creating a cart on Copernicus Hub to send 'aria2 -M cart.meta4' command.
+An alternative of this script could be creating a cart on Copernicus Hub to send `aria2 -M cart.meta4` command:
 ### Tasks:
 Python 3 - Script version 1.0
 - Search on computer a known Download Package. 
