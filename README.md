@@ -14,7 +14,7 @@ Python 3 - Script version 1.0
 - Get Id and password account for the Copernicus Hub 
 - Read a list of tiles in a ASCII file which is a kind of unheader CSV
 
-`          TileCode ; DateOfAcquisition ; LevelOfProduct ; Bands                         ; OutputFolder`
+`          TileCode ; SensingDate ; LevelOfProduct ; Bands                         ; OutputFolder`
 
 `          T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads`
 
