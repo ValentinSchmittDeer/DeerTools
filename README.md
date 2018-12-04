@@ -9,7 +9,7 @@ Thank the ESA API documentation which is well documented and OlivierHagolle exam
 
 An alternative of this script could be creating a cart on Copernicus Hub to send 'aria2 -M cart.meta4' command.
 ### Tasks:
-Python 3
+Python 3 - Script version 1.0
 - Search on computer a known Download Package. 
 - Get Id and password account for the Copernicus Hub 
 - Read a list of tiles in a ASCII file which is a kind of unheader CSV
