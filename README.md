@@ -2,12 +2,14 @@
 
 ## S2_Download
 ### Download Sentinel 2 Products on ESA Scihub.
-I use to download Sentinel 2 data by script to get whole products or just few bands. OlivierHagolle's script is an alternative for search query and download its.
-This script allow to download pre-choosen Sentinel-2 products. He requests the [Copernicus Hub](https://scihub.copernicus.eu/dhus/#/home) which is the official products deposit serveur. From a simple list where tiles are referenced by their name (from the military grid) and their sensing date, it finds the right products on ESA SciHub and downloads it. it can work on Windows and Unix system. 
+I have developed a script called “S2_Download_fromList” to download Sentinel-2 data, allowing access to either the whole product or limited to a few bands. The “S2_Download” script extracts pre-chosen Sentinel-2 images from the [Copernicus Hub](https://scihub.copernicus.eu/dhus/#/home), the ESA official products server. Tiles are listed first by their name (from the military grid) and their sensing date, then it finds the right products on the ESA SciHub, where tiles are referenced by an ID name, and proceed with the downloading. The “S2_Download” can work indifferently on Windows and Unix systems.
 
-Thank the ESA API documentation which is well documented and OlivierHagolle script which show me an example. 
+I have written this tool thanks to CESBIO Olivier Hagolle’s script which provided me with an example. He has developed script to download elements by queries (area, date, cloudy level ...). This is convenient way, but tiles are not exactly chosen.
 
-An alternative of this script could be creating a cart on Copernicus Hub to send `aria2 -M cart.meta4` command:
+Due recognition is also given to the well documented ESA API documentation.
+
+An alternative to this script could consist of creating a cart on Copernicus Hub to send the  `aria2 -M cart.meta4` command
+
 ### Tasks:
 Python 3 - Script version 1.0
 - Search on computer a known Download Package. 
@@ -36,6 +38,6 @@ For each tiles
     
 * Download the Xml file of the product, then download bands
 
-## Authors
+## Author
 
 * **Valentin Schmitt** - [ValentinSchmittDeer](https://github.com/ValentinSchmittDeer)
