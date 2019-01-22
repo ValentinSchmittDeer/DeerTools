@@ -1,8 +1,6 @@
-# DeerTools
-
 ## S2_Download
 ### Download Sentinel 2 Products on ESA Scihub.
-I have developed a script called “S2_Download_fromList” to download Sentinel-2 data, allowing access to either the whole product or limited to a few bands. The “S2_Download” script extracts pre-chosen Sentinel-2 images from the [Copernicus Hub](https://scihub.copernicus.eu/dhus/#/home), the ESA official products server. Tiles are listed first by their name (from the military grid) and their sensing date, then it finds the right products on the ESA SciHub, where tiles are referenced by an ID name, and proceed with the downloading. The “S2_Download” can work indifferently on Windows and Unix systems.
+I have developed a script called “S2_Download_fromList” to download Sentinel-2 data, allowing access to either the whole product or limited to a few bands. The “S2_Download” script extracts pre-chosen Sentinel-2 images from the [Copernicus Hub](https://scihub.copernicus.eu/dhus/#/home), the ESA official products server. Tiles are listed first by their name (from the military grid) and their sensing date, then it finds the right products on the ESA SciHub, where tiles are referenced by an ID name, and proceed with the downloading. The “S2_Download” can work indifferently on Windows and Unix systems.It is also able to read a '.meta4' file and download content.
 
 I have written this tool thanks to CESBIO Olivier Hagolle’s script which provided me with an example. He has developed script to download elements by queries (area, date, cloudy level ...). This is convenient way, but tiles are not exactly chosen.
 
@@ -25,6 +23,8 @@ Python 3 - Script version 1.0
 `          "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "`
 
 `(" can be used to repeat the same information)`
+
+  OR  read a ['.meta4'](http://www.rsgis.info/wp-content/uploads/2015/12/sentinel_03-2.jpg) file (then OpenSearch query avoided, band selection as hard arguments, download in the current directory)
 
 - Get tile centroides from ESA kml (hard link)
 
