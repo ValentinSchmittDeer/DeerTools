@@ -1,4 +1,4 @@
-11## S2_Download
+## S2_Download
 ### Download Sentinel 2 Products on ESA Scihub.
 I have developed a script called “S2_Download_fromList” to download Sentinel-2 data, allowing access to either the whole product or limited to a few bands. The “S2_Download” script extracts pre-chosen Sentinel-2 images from the [Copernicus Hub](https://scihub.copernicus.eu/dhus/#/home), the ESA official products server. Tiles are listed first by their name (from the military grid) and their sensing date, then it finds the right products on the ESA SciHub, where tiles are referenced by an ID name, and proceed with the downloading. The “S2_Download” can work indifferently on Windows and Unix systems.It is also able to read a '.meta4' file and download content.
 
