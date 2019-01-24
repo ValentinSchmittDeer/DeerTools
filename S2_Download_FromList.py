@@ -45,7 +45,7 @@ Python 3
         T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads
         "        ; 20180925          ; L2A            ; B02B03B04 (seclected bands)   ; "
         "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "
-        (" can be used to repeat the same information)
+        (" can be used to repeat the same information, # for comments)
     OR
   Read a '.meta4' file (then OpenSearchquery avoided, band selection as hard arguments 'prodM4', download in the current directory)
 
@@ -79,7 +79,7 @@ dicoDP={'wget': 'wget --no-check-certificate --user={USERNAME} --password={PASSW
 #----------------------------------------------------------
 #Hard arguments
 #----------------------------------------------------------
-__version__=2.0
+__version__=2.1
 # URL of ESA military grid to find centroide
 urlGrid="https://sentinel.esa.int/documents/247904/1955685/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
 # Login Scihub ID
@@ -128,6 +128,7 @@ def ReadListTile(pathFile):
     list=[]
     for line in fileIn:
         clearLine=line.strip()
+        if clearLine.startswith('#'): continue
         words=[word.strip() for word in clearLine.split(';')]
         if not len(words)==5 : raise RuntimeError("Reading error of tile list : %s"% words)
         
