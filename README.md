@@ -22,7 +22,7 @@ Python 3 - Script version 2.0
 
 `          "        ; 20180925          ; L2A            ; B05-B07 (band 5 to band 7)    ; "`
 
-`(" can be used to repeat the same information, # to comments)`
+*(" can be used to repeat the same information, # to comment)*
 
   OR  read a ['.meta4'](http://www.rsgis.info/wp-content/uploads/2015/12/sentinel_03-2.jpg) file (then OpenSearch query avoided, band selection as hard arguments, download in the current directory)
 
