@@ -1,10 +1,8 @@
 #!/usr/local/bin/python3
-
 import sys, os
 from time import strftime,strptime,localtime
 import xml.etree.ElementTree as ET
 from pprint import pprint
-
 
 #----------------------------------------------------------------------------------------------------
 # Usage
@@ -26,7 +24,6 @@ a '.meta4' file and download content.
 example which show me an example. 
     An alternative of this script could be creating a cart on Copernicus Hub 
 to send 'aria2 -M cart.meta4' command.
-
 **************************************************************************
                              Tasks:
 Python 3
@@ -35,11 +32,9 @@ Python 3
        • Wget : https://www.gnu.org/software/wget/
        • cURL : https://curl.haxx.se/
        • Aria2 : https://aria2.github.io/manual/en/html/index.html
-
 - Get Id and password account for the Copernicus Hub 
   from a txt file 'S2_DownloadProducts_IdScihub.txt' next to the script
         example: JojoId JojoPass 
-
 - Read a list of tiles in a ASCII file which is a kind of unheader CSV
         TileCode ; SensingDate ; LevelOfProduct ; Bands                         ; OutputFolder
         T31TFL   ; 20181007          ; L1C            ; prod (Whole products)         ; /Users/administrateur/Downloads
@@ -48,9 +43,7 @@ Python 3
         (" can be used to repeat the same information, # for comments)
     OR
   Read a '.meta4' file (then OpenSearchquery avoided, band selection as hard arguments 'prodM4', download in the current directory)
-
 - Get tile centroides from ESA kml (hard link)
-
 For each tiles
 - Send an OpenSearch query to get the product ID (On Scihub, tiles are referenced by Id name)
 - Parse this query to find the right product
@@ -58,16 +51,13 @@ For each tiles
     OR
 - Download the Xml file of the product, then download bands
 
-
 **************************************************************************
 S2_DownloadProducts_FromList.py
 Arg1: List of tiles 
     OR
     products.meta4 (from https://scihub.copernicus.eu)
-
 (The script less argument returns this help)
 """)
-
 #----------------------------------------------------------
 # List of Download Package
 #----------------------------------------------------------
@@ -75,13 +65,13 @@ dicoDP={'wget': 'wget --no-check-certificate --user={USERNAME} --password={PASSW
     'curl': 'curl -u {USERNAME}:{PASSWORD} -g "{URI_QUERY}" > {OUTFOLDER}%s{FILENAME}'% os.sep,
     'aria2c': 'aria2c --http-user={USERNAME} --http-passwd={PASSWORD} -d {OUTFOLDER} -o {FILENAME} "{URI_QUERY}"'
     }
-
 #----------------------------------------------------------
 #Hard arguments
 #----------------------------------------------------------
-__version__=2.1
-# URL of ESA military grid to find centroide
-urlGrid="https://sentinel.esa.int/documents/247904/1955685/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
+__version__=2.2
+# URL Kml military grid to find centroide
+urlGrid=["-https://sentinel.esa.int/documents/247904/1955685/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"]
+urlGrid+=['https://hls.gsfc.nasa.gov/wp-content/uploads/2016/03/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml']
 # Login Scihub ID
 nameIdFile="S2_Download_IdScihub.txt"
 # URL OpenSearch Scihub API
@@ -110,7 +100,6 @@ def GetDP(dicDP):
     
     del code, dicDP,
     return strDP
-
 def GetLoginId(pathFile):
     ficIn=open(pathFile)
     lstIn=ficIn.readlines()
@@ -121,7 +110,6 @@ def GetLoginId(pathFile):
     lstId=(words[0].strip(),words[1].strip())
     
     return lstId
-
 def ReadListTile(pathFile):
     fileIn=open(pathFile)
     tile,date,level,bands,repOut=None,None,None,None,None
@@ -184,7 +172,6 @@ def ReadListTile(pathFile):
     
     fileIn.close()
     return list
-
 def ReadMeta4(pathFile):
     tree=ET.parse(pathFile)
     root=tree.getroot()
@@ -206,11 +193,19 @@ def ReadMeta4(pathFile):
         lst.append([tile,date,level,bands,repOut,title,ident,urlOD])
     return lst
 
-def ParseKml(urlKml,listTile):
+def ParseKml(lstUrlKml,listTile):
     dicCenter=dict((name,None) for name in listTile)
     
     if not 'urllib' in locals(): import urllib.request
-    fileKml=urllib.request.urlopen(urlKml).read()
+    fileKml,k='',0
+    while not fileKml:
+        try:
+            fileKml=urllib.request.urlopen(lstUrlKml[k]).read()
+        except urllib.error.URLError or ValueError:
+            k+=1
+            if k>len(lstUrlKml)-1: raise RuntimeError("ESA military grid kml file does not find")
+        
+    fileKml=urllib.request.urlopen(lstUrlKml[k]).read()
     root = ET.fromstring(fileKml)
     noise=root.tag.split('}')[0]+'}'
     
@@ -275,6 +270,7 @@ def ReadS2XML(path,level):
             dico[key]=elem.text+'.jp2'
     
     return dico
+
 #==========================================================
 #main
 #----------------------------------------------------------
@@ -288,7 +284,7 @@ if __name__ == "__main__":
         if nbArg != 2: raise RuntimeError("incorrect number of arguments: %d instead of 1" % (nbArg-1))
         
         pathIn=sys.argv[1].strip()
-        if not os.path.isfile(pathIn): raise RuntimeError("List is incorrect")
+        if not os.path.isfile(pathIn): raise RuntimeError("Input list does not find")
         
         #----------------------------------------------------------------------------------------------------
         #Unix special character
@@ -309,11 +305,12 @@ if __name__ == "__main__":
         #----------------------------------------------------------------------------------------------------
         pathIdFile=os.path.join(os.path.dirname(sys.argv[0]),nameIdFile)
         if not os.path.exists(pathIdFile):
-            print('--------------------\nLogin file does not find, let\'s create "IdScihub.txt" next to the script with ("ID Password") or')
+            print('--------------------\nLogin file does not find, fill "IdScihub.txt" next to the script with ("ID Password") or')
             pathIdFile=input('Drop yours here (or return):')
             if not pathIdFile: raise RuntimeError("End")
         
         lstLogin=GetLoginId(pathIdFile.strip())
+        if lstLogin[0]=='Name': raise RuntimeError('Login file does not find, fill "IdScihub.txt" next to the script with ("ID Password")')
         print("------ Hello %s ------------"% lstLogin[0])
         
         #----------------------------------------------------------------------------------------------------
@@ -334,7 +331,7 @@ if __name__ == "__main__":
         #----------------------------------------------------------------------------------------------------
         if lstTilesUrlLess:
             dicCentroide=ParseKml(urlGrid,[tile[0] for tile in lstTiles])
-            
+        
         #----------------------------------------------------------------------------------------------------
         # Query Loop
         #----------------------------------------------------------------------------------------------------
