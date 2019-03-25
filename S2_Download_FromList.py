@@ -274,6 +274,9 @@ def ReadS2XML(path,level):
     
     return dico
 
+def PrintCmd(cmdCur,percent=0.0):
+    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%d-%H:%M:%S",localtime()),percent,cmdCur))
+ 
 #==========================================================
 #main
 #----------------------------------------------------------
@@ -351,7 +354,7 @@ if __name__ == "__main__":
             urlCur=CreateOSQuery(urlOS,nameTile,dateTile,levelTile,dicCentroide)
             
             cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME=nameQuery, URI_QUERY=urlCur)
-            print("--%s: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),cmd))
+            PrintCmd(cmd)
             returnCode=os.system(cmd)
             
             if returnCode or not os.path.exists(pathQuery) or not os.path.getsize(pathQuery):
@@ -387,7 +390,7 @@ if __name__ == "__main__":
                     continue
                 
                 cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME=titleTile+'.zip', URI_QUERY=urlODTile.replace("$value",specChar))
-                print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                PrintCmd(cmd,i*pourcent)
                 returnCode=os.system(cmd)
                 
                 if returnCode : 
@@ -395,6 +398,7 @@ if __name__ == "__main__":
                     continue
                 elif os.path.exists(os.path.join(outTile,titleTile+'.zip')) and os.path.getsize(os.path.join(outTile,titleTile+'.zip')): 
                     stat+=1
+                    i+=1
             
             #Download bands 
             else:
@@ -409,7 +413,7 @@ if __name__ == "__main__":
                 urlXml='/'.join( urlODTile.split('/')[:-1]+["Nodes('%s.SAFE')"% titleTile]+["Nodes('%s')"% xmlName]+[specChar] )
                 
                 cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=xmlName, URI_QUERY=urlXml)
-                print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                PrintCmd(cmd,i*pourcent)
                 returnCode=os.system(cmd)
                 
                 if returnCode : 
@@ -428,7 +432,7 @@ if __name__ == "__main__":
                     urlBand='/'.join( urlODTile.split('/')[:-1]+["Nodes('%s.SAFE')"% titleTile]+["Nodes('%s')"% elem for elem in relatPathBand.split('/')]+[specChar] )
                     
                     cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=nameBandOut, URI_QUERY=urlBand)
-                    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
+                    PrintCmd(cmd,i*pourcent)
                     returnCodeCur=os.system(cmd)
                     
                     if returnCodeCur: 
@@ -437,6 +441,7 @@ if __name__ == "__main__":
                 
                 if not returnCode:
                     stat+=1
+                    i+=1
             
         #----------------------------------------------------------------------------------------------------
         # End
