@@ -8,7 +8,7 @@ from pprint import pprint
 #----------------------------------------------------------------------------------------------------
 # Usage
 #----------------------------------------------------------------------------------------------------
-__version__=2.3
+__version__=2.4
 parser = argparse.ArgumentParser(description='''                Download Sentinel 2 Products on ESA Scihub
     I use to download Sentinel 2 data by script to get whole products or 
 just few bands. OlivierHagolle's script is an alternative for search query
@@ -175,7 +175,12 @@ def ReadListTile(pathFile):
         # Output directory
         if not words[4]=='"' : 
             val=words[4]
-            if not os.path.isdir(val): raise RuntimeError("Tile list reading error: #4 = %s"% val)
+            father=os.path.dirname(val)
+            if not os.path.isdir(val) and os.path.isdir(father): 
+                os.mkdir(father)
+            elif not os.path.isdir(val) and not os.path.isdir(father):
+                raise RuntimeError("Tile list reading error: #4 = %s"% val)
+            
             repOut=val
         
         #final check
