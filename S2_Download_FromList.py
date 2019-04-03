@@ -177,7 +177,7 @@ def ReadListTile(pathFile):
             val=words[4]
             father=os.path.dirname(val)
             if not os.path.isdir(val) and os.path.isdir(father): 
-                os.mkdir(father)
+                os.mkdir(val)
             elif not os.path.isdir(val) and not os.path.isdir(father):
                 raise RuntimeError("Tile list reading error: #4 = %s"% val)
             
