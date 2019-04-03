@@ -95,16 +95,28 @@ def GetDP(dicDP):
     del code, dicDP,
     return strDP
 
-def GetLoginId(pathFile):
-    ficIn=open(pathFile)
-    lstIn=ficIn.readlines()
-    ficIn.close()
+def GetLoginId():
+    name,password='',''
+    while not name and not password:
+        pathFile=os.path.join(os.path.dirname(sys.argv[0]),nameIdFile)
+        if not os.path.exists(pathFile):
+            name=input('Scihub user name:')
+            password=input('Scihub user password:')
+            ficIn=open(pathFile,'w')
+            ficIn.write('%s\t%s'% (name,password))
+            ficIn.close()
+        else:
+            ficIn=open(pathFile)
+            words=ficIn.readlines()[0].split()
+            name=words[0]
+            password=words[1]
+        
+        if name=='Name' or password=='Password':
+            if os.path.exists(pathFile):os.remove(pathFile)
+            print('IDError')
+            name,password='',''
     
-    if not len(lstIn)==1 : raise RuntimeError("Login ID reading error:\n%s"% ''.join(lstIn))
-    words=lstIn[0].split()
-    lstId=(words[0].strip(),words[1].strip())
-    
-    return lstId
+    return [name,password]
 
 def BandParse(text):
     strBands=text.strip(' B').split('B')
@@ -274,9 +286,6 @@ def ReadS2XML(path,level):
     
     return dico
 
-def PrintCmd(cmdCur,percent=0.0):
-    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%d-%H:%M:%S",localtime()),percent,cmdCur))
- 
 #==========================================================
 #main
 #----------------------------------------------------------
@@ -308,14 +317,7 @@ if __name__ == "__main__":
         #----------------------------------------------------------------------------------------------------
         #get login ID
         #----------------------------------------------------------------------------------------------------
-        pathIdFile=os.path.join(os.path.dirname(sys.argv[0]),nameIdFile)
-        if not os.path.exists(pathIdFile):
-            print('--------------------\nLogin file does not find, fill "IdScihub.txt" next to the script with ("ID Password") or')
-            pathIdFile=input('Drop yours here (or return):')
-            if not pathIdFile: raise RuntimeError("End")
-        
-        lstLogin=GetLoginId(pathIdFile.strip())
-        if lstLogin[0]=='Name': raise RuntimeError('Login file does not find, fill "IdScihub.txt" next to the script with ("ID Password")')
+        lstLogin=GetLoginId()
         print("\n------ Hello %s ---------"% lstLogin[0])
         
         #----------------------------------------------------------------------------------------------------
@@ -354,7 +356,7 @@ if __name__ == "__main__":
             urlCur=CreateOSQuery(urlOS,nameTile,dateTile,levelTile,dicCentroide)
             
             cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME=nameQuery, URI_QUERY=urlCur)
-            PrintCmd(cmd)
+            print("--%s: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),cmd))
             returnCode=os.system(cmd)
             
             if returnCode or not os.path.exists(pathQuery) or not os.path.getsize(pathQuery):
@@ -390,7 +392,7 @@ if __name__ == "__main__":
                     continue
                 
                 cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=outTile ,FILENAME=titleTile+'.zip', URI_QUERY=urlODTile.replace("$value",specChar))
-                PrintCmd(cmd,i*pourcent)
+                print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
                 returnCode=os.system(cmd)
                 
                 if returnCode : 
@@ -398,7 +400,6 @@ if __name__ == "__main__":
                     continue
                 elif os.path.exists(os.path.join(outTile,titleTile+'.zip')) and os.path.getsize(os.path.join(outTile,titleTile+'.zip')): 
                     stat+=1
-                    i+=1
             
             #Download bands 
             else:
@@ -413,7 +414,7 @@ if __name__ == "__main__":
                 urlXml='/'.join( urlODTile.split('/')[:-1]+["Nodes('%s.SAFE')"% titleTile]+["Nodes('%s')"% xmlName]+[specChar] )
                 
                 cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=xmlName, URI_QUERY=urlXml)
-                PrintCmd(cmd,i*pourcent)
+                print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
                 returnCode=os.system(cmd)
                 
                 if returnCode : 
@@ -432,7 +433,7 @@ if __name__ == "__main__":
                     urlBand='/'.join( urlODTile.split('/')[:-1]+["Nodes('%s.SAFE')"% titleTile]+["Nodes('%s')"% elem for elem in relatPathBand.split('/')]+[specChar] )
                     
                     cmd=formatDP.format(USERNAME=lstLogin[0], PASSWORD=lstLogin[1], OUTFOLDER=repOut ,FILENAME=nameBandOut, URI_QUERY=urlBand)
-                    PrintCmd(cmd,i*pourcent)
+                    print("--%s-%.2f%%: %s"% (strftime("%Y.%m.%dT%H:%M:%S",localtime()),i*pourcent,cmd))
                     returnCodeCur=os.system(cmd)
                     
                     if returnCodeCur: 
@@ -441,7 +442,6 @@ if __name__ == "__main__":
                 
                 if not returnCode:
                     stat+=1
-                    i+=1
             
         #----------------------------------------------------------------------------------------------------
         # End
