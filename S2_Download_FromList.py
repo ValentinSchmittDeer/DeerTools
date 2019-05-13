@@ -174,7 +174,7 @@ def ReadListTile(pathFile):
                 bands=BandParse(val)
         # Output directory
         if not words[4]=='"' : 
-            val=words[4]
+            val=words[4].replace('~',os.path.expanduser('~'))
             father=os.path.dirname(val)
             if not os.path.isdir(val) and os.path.isdir(father): 
                 os.mkdir(val)
